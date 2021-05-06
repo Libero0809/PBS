@@ -9,6 +9,9 @@
 
 uint myhash(uint key, uint seed) { return XXH32(&key, sizeof(key), seed); }
 
+// The side which will initiate set reconciliation and get the set difference.
+// It sends the sketch to remote and receives the xor sums from remote.
+// It then retrieve the distinct items and check the checksum.
 class Host {
    public:
     uint t_ = 0;
@@ -42,6 +45,7 @@ class Host {
         }
     }
 
+    // split when too many bit errors occurred
     std::vector<Host> split(uint n, uint seed) {
         auto hosts = std::vector<Host>(n, Host(logn_, t_));
         for (const uint& item : items_) {
@@ -68,6 +72,7 @@ class Host {
         return buffer;
     }
 
+    // Process the xor sums received from remote
     int reconcile(std::vector<uint>& results) {
         if (results[0] == t_ + 1) {  // too many distinct items case
             return -1;
@@ -103,6 +108,8 @@ class Host {
     }
 };
 
+// The other side.
+// It decode the sketch and send the xor sums to host.
 class Remote {
    public:
     uint t_ = 0;
@@ -136,6 +143,7 @@ class Remote {
         }
     }
 
+    // split when too many bit errors occurred
     std::vector<Remote> split(uint n, uint seed) {
         auto remotes = std::vector<Remote>(n, Remote(logn_, t_));
         for (const uint& item : items_) {
